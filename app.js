@@ -15,17 +15,54 @@ const session = {
 
 /* ---------- API ---------- */
 
-async function api(action, extra = {}) {
+let pending = 0;
+const setBusy = (delta) => { pending += delta; document.documentElement.classList.toggle("busy", pending > 0); };
+
+async function api(action, extra = {}, { quiet = false } = {}) {
   if (!ENDPOINT) throw new Error("The dashboard isn't connected to your Google Sheet yet.");
-  // A plain string body is sent as text/plain, which Apps Script accepts without a CORS preflight
-  const res = await fetch(ENDPOINT, { method: "POST", body: JSON.stringify({ action, password: state.password, ...extra }) });
-  if (!res.ok) throw new Error("Couldn't reach your Google Sheet. Try again.");
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  state.visits = data.visits || [];
-  state.bin = data.bin || [];
-  state.sheetUrl = data.sheetUrl || "";
-  return data;
+  if (!quiet) setBusy(1);
+  try {
+    // A plain string body is sent as text/plain, which Apps Script accepts without a CORS preflight
+    const res = await fetch(ENDPOINT, { method: "POST", body: JSON.stringify({ action, password: state.password, ...extra }) });
+    if (!res.ok) throw new Error("Couldn't reach your Google Sheet. Try again.");
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    state.visits = data.visits || [];
+    state.bin = data.bin || [];
+    state.sheetUrl = data.sheetUrl || "";
+    return data;
+  } finally {
+    if (!quiet) setBusy(-1);
+  }
+}
+
+/* ---------- Session ----------
+   The login lives in sessionStorage, so it survives a refresh (F5) but not closing the tab.
+   It also ends after 1 minute without any mouse, keyboard, scroll, or touch activity. */
+
+const IDLE_MS = 60000;
+let loggedIn = false;
+let lastTouch = 0;
+
+const touch = () => session.set("pa_active", String(Date.now()));
+["pointerdown", "pointermove", "keydown", "wheel", "scroll", "touchstart"].forEach((ev) =>
+  addEventListener(ev, () => {
+    if (!loggedIn || Date.now() - lastTouch < 5000) return;
+    lastTouch = Date.now();
+    touch();
+  }, { passive: true, capture: true }));
+
+setInterval(() => {
+  if (loggedIn && Date.now() - (Number(session.get("pa_active")) || 0) >= IDLE_MS) {
+    endSession("You were logged out after 1 minute of inactivity.");
+  }
+}, 5000);
+
+function endSession(message) {
+  session.set("pa_pw", null);
+  session.set("pa_active", null);
+  if (message) session.set("pa_msg", message);
+  location.reload();
 }
 
 /* ---------- Login ---------- */
@@ -39,6 +76,7 @@ $("#login-form").addEventListener("submit", async (e) => {
   try {
     await api("list");
     session.set("pa_pw", state.password);
+    touch();
     showApp();
   } catch (err) {
     $("#login-error").textContent = err.message;
@@ -48,6 +86,8 @@ $("#login-form").addEventListener("submit", async (e) => {
 });
 
 function showApp() {
+  loggedIn = true;
+  document.documentElement.classList.remove("restoring");
   $("#login").hidden = true;
   $("#app").hidden = false;
   render();
@@ -56,15 +96,12 @@ function showApp() {
 
 // Reload data every 30s while the tab is visible, and right away when you return to the tab
 function startAutoRefresh() {
-  const quiet = () => { if (document.visibilityState === "visible") api("list").then(render).catch(() => {}); };
+  const quiet = () => { if (document.visibilityState === "visible") api("list", {}, { quiet: true }).then(render).catch(() => {}); };
   setInterval(quiet, 30000);
   document.addEventListener("visibilitychange", quiet);
 }
 
-$("#logout").addEventListener("click", () => {
-  session.set("pa_pw", null);
-  location.reload();
-});
+$("#logout").addEventListener("click", () => endSession());
 
 /* ---------- Controls ---------- */
 
@@ -344,8 +381,25 @@ function exportCsv() {
 /* ---------- Start ---------- */
 
 (async () => {
+  const msg = session.get("pa_msg");
+  if (msg) { $("#login-error").textContent = msg; session.set("pa_msg", null); }
+
   const saved = session.get("pa_pw");
-  if (!saved) return;
+  const fresh = Date.now() - (Number(session.get("pa_active")) || 0) < IDLE_MS;
+  if (!saved || !fresh) {
+    session.set("pa_pw", null);
+    document.documentElement.classList.remove("restoring");
+    return;
+  }
+  // Refresh with a live session: show the loader, reload the data, then open the dashboard
   state.password = saved;
-  try { await api("list"); showApp(); } catch { session.set("pa_pw", null); }
+  touch();
+  try {
+    await api("list");
+    showApp();
+  } catch (err) {
+    session.set("pa_pw", null);
+    $("#login-error").textContent = err.message === "Wrong password" ? "Please log in again." : err.message;
+    document.documentElement.classList.remove("restoring");
+  }
 })();

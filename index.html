@@ -9,9 +9,28 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=2">
+<link rel="stylesheet" href="styles.css?v=3">
+<script>
+  // Decided before the first paint: on a refresh with a live session, show the loader instead of flashing the login form
+  try {
+    if (sessionStorage.getItem("pa_pw") && Date.now() - Number(sessionStorage.getItem("pa_active")) < 60000) {
+      document.documentElement.classList.add("restoring");
+    }
+  } catch (e) {}
+</script>
 </head>
 <body>
+
+<div class="loadbar" aria-hidden="true"><i></i></div>
+
+<!-- LOADING (refresh with a live session) -->
+<main id="loading" class="login loading" aria-live="polite">
+  <div class="login-card loading-card">
+    <div class="brand"><span class="logo">jr<b>.</b></span> Portfolio Analytics</div>
+    <p>Loading your dashboard…</p>
+    <div class="progress"><i></i></div>
+  </div>
+</main>
 
 <!-- LOGIN -->
 <main id="login" class="login">
@@ -165,6 +184,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="config.js?v=2"></script>
-<script src="app.js?v=2"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
