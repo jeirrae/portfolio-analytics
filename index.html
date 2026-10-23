@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Portfolio Analytics</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23034C8C'/%3E%3Crect x='14' y='34' width='8' height='16' rx='2' fill='white'/%3E%3Crect x='28' y='24' width='8' height='26' rx='2' fill='white'/%3E%3Crect x='42' y='14' width='8' height='36' rx='2' fill='%23F2541B'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=1">
+</head>
+<body>
+
+<!-- LOGIN -->
+<main id="login" class="login">
+  <form class="login-card" id="login-form">
+    <div class="brand"><span class="logo">jr<b>.</b></span> Portfolio Analytics</div>
+    <h1>Welcome back</h1>
+    <p>Enter your dashboard password to see your portfolio visits.</p>
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password" required>
+    <button class="btn btn-primary" type="submit">Open dashboard</button>
+    <p class="login-error" id="login-error" role="alert"></p>
+  </form>
+</main>
+
+<!-- APP -->
+<div id="app" class="app" hidden>
+  <header class="topbar">
+    <div class="brand"><span class="logo">jr<b>.</b></span> Portfolio Analytics</div>
+    <div class="top-actions">
+      <select id="range" aria-label="Date range">
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+        <option value="all">All time</option>
+      </select>
+      <button class="btn btn-ghost" id="refresh">Refresh</button>
+      <button class="btn btn-ghost" id="export">Export CSV</button>
+      <a class="btn btn-ghost" id="sheet" target="_blank" rel="noopener">Open Google Sheet</a>
+      <button class="btn btn-ghost" id="logout">Log out</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="overview" class="active">Overview</button>
+    <button role="tab" data-tab="visits">Visits <span class="count" id="visits-count">0</span></button>
+    <button role="tab" data-tab="bin">Recycle Bin <span class="count" id="bin-count">0</span></button>
+  </nav>
+
+  <!-- OVERVIEW -->
+  <section class="panel" data-panel="overview">
+    <div class="kpis">
+      <div class="kpi"><span>Total unique visitors</span><strong id="kpi-unique">0</strong></div>
+      <div class="kpi"><span>Total visits</span><strong id="kpi-visits">0</strong></div>
+      <div class="kpi"><span>Average visit length</span><strong id="kpi-length">0s</strong></div>
+      <div class="kpi"><span>Average sections viewed</span><strong id="kpi-sections">0/8</strong></div>
+    </div>
+
+    <div class="card">
+      <h2>Visits over time</h2>
+      <div class="chart tall"><canvas id="chart-time"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h2>Top performing sections</h2>
+      <div class="top-sections" id="top-sections"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>Average time spent per section</h2>
+        <div class="chart"><canvas id="chart-section-time"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>Sections viewed by percentage</h2>
+        <div class="chart"><canvas id="chart-section-pct"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div class="card">
+        <h2>Countries</h2>
+        <div class="chart"><canvas id="chart-country"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>Devices</h2>
+        <div class="chart"><canvas id="chart-device"></canvas></div>
+        <ul class="mini-list" id="os-list"></ul>
+      </div>
+      <div class="card">
+        <h2>Where visitors came from</h2>
+        <div class="chart"><canvas id="chart-source"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>Videos played</h2>
+        <ul class="rank-list" id="video-list"></ul>
+      </div>
+      <div class="card">
+        <h2>Work with Me clicks</h2>
+        <ul class="rank-list" id="click-list"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- VISITS -->
+  <section class="panel" data-panel="visits" hidden>
+    <div class="card">
+      <div class="table-bar">
+        <input type="search" id="search" placeholder="Search country, device, source…" aria-label="Search visits">
+        <button class="btn btn-danger" id="delete" disabled>Move to Recycle Bin</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th><input type="checkbox" id="select-all" aria-label="Select all visits"></th>
+            <th>Date</th><th>Country</th><th>Device</th><th>Source</th><th>Visit length</th><th>Sections</th><th>Videos</th><th>Contact</th>
+          </tr></thead>
+          <tbody id="visits-body"></tbody>
+        </table>
+        <p class="empty" id="visits-empty">No visits in this date range yet.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- RECYCLE BIN -->
+  <section class="panel" data-panel="bin" hidden>
+    <div class="card">
+      <div class="table-bar">
+        <p class="hint">Deleted visits stay here until you restore them or delete them forever.</p>
+        <div class="bar-actions">
+          <button class="btn btn-primary" id="restore" disabled>Restore</button>
+          <button class="btn btn-danger" id="purge" disabled>Delete forever</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th><input type="checkbox" id="bin-select-all" aria-label="Select all deleted visits"></th>
+            <th>Deleted</th><th>Visit date</th><th>Country</th><th>Device</th><th>Source</th><th>Visit length</th>
+          </tr></thead>
+          <tbody id="bin-body"></tbody>
+        </table>
+        <p class="empty" id="bin-empty">The Recycle Bin is empty.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <label class="toggle"><input type="checkbox" id="ignore-me"> Don't count my own visits on this browser</label>
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="config.js?v=1"></script>
+<script src="app.js?v=1"></script>
+</body>
+</html>
