@@ -51,6 +51,14 @@ function showApp() {
   $("#login").hidden = true;
   $("#app").hidden = false;
   render();
+  startAutoRefresh();
+}
+
+// Reload data every 30s while the tab is visible, and right away when you return to the tab
+function startAutoRefresh() {
+  const quiet = () => { if (document.visibilityState === "visible") api("list").then(render).catch(() => {}); };
+  setInterval(quiet, 30000);
+  document.addEventListener("visibilitychange", quiet);
 }
 
 $("#logout").addEventListener("click", () => {
@@ -91,11 +99,15 @@ $("#export").addEventListener("click", exportCsv);
 
 // Shares the portfolio's origin (jeirrae.github.io), so this flag is read by the portfolio tracker
 const ignore = $("#ignore-me");
+const syncIgnore = () => { $("#ignore-banner").hidden = !ignore.checked; };
 try { ignore.checked = localStorage.getItem("pa_ignore") === "1"; } catch {}
+syncIgnore();
 ignore.addEventListener("change", () => {
   try { ignore.checked ? localStorage.setItem("pa_ignore", "1") : localStorage.removeItem("pa_ignore"); } catch {}
+  syncIgnore();
   toast(ignore.checked ? "Your visits on this browser won't be counted" : "Your visits on this browser will be counted");
 });
+$("#ignore-off").addEventListener("click", () => { ignore.checked = false; ignore.dispatchEvent(new Event("change")); });
 
 async function run(fn, message) {
   document.body.style.cursor = "progress";

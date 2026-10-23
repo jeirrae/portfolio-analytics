@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=1">
+<link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
 
@@ -43,6 +43,11 @@
       <button class="btn btn-ghost" id="logout">Log out</button>
     </div>
   </header>
+
+  <div class="banner" id="ignore-banner" hidden>
+    <span><b>Your own visits aren't being counted on this browser.</b> Test links you open here won't show up. Use another browser or a private window to test.</span>
+    <button class="btn btn-ghost" id="ignore-off">Count my visits</button>
+  </div>
 
   <nav class="tabs" role="tablist">
     <button role="tab" data-tab="overview" class="active">Overview</button>
@@ -160,6 +165,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="config.js?v=2"></script>
-<script src="app.js?v=1"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>

@@ -48,6 +48,8 @@ h1, h2, .brand, .btn, .kpi strong, .tabs button { font-family: "Poppins", sans-s
 .top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 select { padding: 10px 14px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--white); color: var(--blue); font: 500 14px "Inter", sans-serif; cursor: pointer; }
 
+.banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; padding: 14px 18px; border-radius: 16px; background: #fde9e1; color: var(--navy); font-size: 14px; border: 1px solid rgba(242,84,27,.3); }
+.banner b { color: var(--orange); }
 .tabs { display: flex; gap: 6px; background: var(--white); padding: 6px; border-radius: 999px; width: fit-content; margin-bottom: 20px; border: 1px solid var(--line); }
 .tabs button { border: 0; background: none; padding: 9px 18px; border-radius: 999px; font-size: 14px; font-weight: 500; color: var(--muted); cursor: pointer; display: flex; align-items: center; gap: 8px; }
 .tabs button.active { background: var(--blue); color: var(--white); }
